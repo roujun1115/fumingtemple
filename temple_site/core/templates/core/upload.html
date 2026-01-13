@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">批次上傳 - {{ mode }}</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label class="block mb-2">請選擇 Excel 檔案</label>
+            <input type="file" name="excel_file" accept=".xlsx, .xls" class="border w-full p-2">
+        </div>
+        <div class="text-sm text-gray-500 mb-4">
+            * 提醒：Excel 必須包含「年份」、「姓名」等欄位。
+        </div>
+        <button type="submit" class="bg-templeRed text-white px-4 py-2 rounded w-full">開始上傳</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+<div class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+    <div>
+        <label class="block text-sm font-bold text-templeRed mb-1">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<p class="text-red-500 text-xs">{{ field.errors.0 }}</p>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+
+<style>
+    /* 讓 Django 表單輸入框符合宮廟風格 */
+    #modal-body input, #modal-body select, #modal-body textarea {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #D4AF37;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+    #modal-body input[type="checkbox"] { width: auto; height: 1.25rem; width: 1.25rem; }
+</style>

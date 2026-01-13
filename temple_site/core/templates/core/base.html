@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}大雅福明宮{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        templeRed: '#8B0000', templeGold: '#D4AF37', templeBg: '#F5F5DC', templeDark: '#2C2C2C'
+                    },
+                    fontFamily: { serif: ['"Noto Serif TC"', 'serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Noto Serif TC', serif; background-color: #F5F5DC; scroll-behavior: smooth; }
+        .nav-item { padding: 0.5rem 0.25rem; transition: all 0.3s; cursor: pointer; border-bottom: 2px solid transparent; }
+        .nav-item.active { border-bottom: 2px solid #D4AF37; color: #D4AF37; font-weight: bold; }
+    </style>
+</head>
+<body class="text-templeDark flex flex-col min-h-screen">
+
+<header class="bg-templeRed text-white sticky top-0 z-50 shadow-lg">
+    <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div onclick="navTo('home')" class="cursor-pointer flex items-center space-x-3">
+            <div class="w-10 h-10 border-2 border-templeGold rounded-full flex items-center justify-center bg-white text-templeRed font-bold">福</div>
+            <h1 class="text-xl font-bold text-templeGold tracking-widest">大雅福明宮</h1>
+        </div>
+        <nav class="hidden md:flex space-x-6">
+            <button class="nav-item" id="nav-home" onclick="navTo('home')">首頁</button>
+            <button class="nav-item" id="nav-committee" onclick="navTo('committee')">委員</button>
+            <button class="nav-item" id="nav-lights" onclick="navTo('lights')">點燈</button>
+            <button class="nav-item" id="nav-andou" onclick="navTo('andou')">安斗</button>
+            <button class="nav-item" id="nav-donation" onclick="navTo('donation')">捐獻</button>
+        </nav>
+        <div class="flex items-center space-x-4">
+            {% if user.is_authenticated %}
+                <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button type="submit" class="text-sm border border-white/30 px-3 py-1 rounded">登出</button></form>
+            {% else %}
+                <a href="{% url 'login' %}" class="text-sm border border-templeGold px-3 py-1 rounded text-templeGold">登入</a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+
+<main class="flex-grow container mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+</main>
+
+<div id="admin-modal" class="fixed inset-0 z-[100] hidden overflow-y-auto">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden">
+            <div class="bg-templeRed p-4 text-white flex justify-between items-center">
+                <h3 class="font-serif text-lg font-bold"><i class="fas fa-edit mr-2"></i>資料管理</h3>
+                <button onclick="closeModal()" class="text-2xl leading-none">&times;</button>
+            </div>
+            <div class="h-[60vh] md:h-[500px]">
+                <iframe id="admin-iframe" src="" class="w-full h-full border-none"></iframe>
+            </div>
+            <div class="bg-gray-100 p-3 text-center text-xs text-gray-500 font-sans">
+                完成後請按儲存，隨後點擊右上角 X 關閉即可更新網頁。
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="bg-templeDark text-gray-400 py-6 text-center border-t-4 border-templeGold">
+    <p class="text-templeGold font-bold">大雅福明宮管理系統</p>
+    <p class="text-xs mt-1 italic">© 2026</p>
+</footer>
+
+<script>
+    function navTo(id) {
+        if (window.location.pathname === '/') { showSection(id); }
+        else { window.location.href = '/?section=' + id; }
+    }
+
+    function openModal(url) {
+        const modal = document.getElementById('admin-modal');
+        document.getElementById('admin-iframe').src = url;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        document.getElementById('admin-modal').classList.add('hidden');
+        document.getElementById('admin-iframe').src = "";
+        document.body.style.overflow = 'auto';
+        window.location.reload(); // 關閉後自動重新整理
+    }
+</script>
+</body>
+</html>

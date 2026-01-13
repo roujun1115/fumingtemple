@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+{% block content %}
+<div class="max-w-md mx-auto mt-10 px-4">
+    <div class="bg-white rounded-lg shadow-2xl overflow-hidden">
+        <div class="bg-templeRed p-6 text-center">
+            <h2 class="text-templeGold text-2xl font-bold font-serif">廟方管理系統</h2>
+            <p class="text-white text-xs mt-1">請輸入帳號密碼進行身分驗證</p>
+        </div>
+        <form method="post" class="p-8">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-templeDark font-bold mb-2"><i class="fas fa-user mr-2 text-templeGold"></i>帳號</label>
+                <input type="text" name="username" class="w-full border-b-2 border-gray-200 focus:border-templeGold p-2 outline-none">
+            </div>
+            <div class="mb-8">
+                <label class="block text-templeDark font-bold mb-2"><i class="fas fa-lock mr-2 text-templeGold"></i>密碼</label>
+                <input type="password" name="password" class="w-full border-b-2 border-gray-200 focus:border-templeGold p-2 outline-none">
+            </div>
+            <button type="submit" class="w-full bg-templeRed text-templeGold font-bold py-3 rounded shadow-lg hover:bg-black transition">
+                登入系統
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

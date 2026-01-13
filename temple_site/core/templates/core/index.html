@@ -1,0 +1,351 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div id="filter-bar" class="hidden mb-6 flex items-center justify-end px-4">
+    <form method="GET" action="{% url 'index' %}" class="flex items-center space-x-2" id="filter-form">
+        <label class="font-serif text-templeRed font-bold">年份：</label>
+        <input type="hidden" name="section" id="filter-section" value="{{ request.GET.section|default:'home' }}">
+        <select name="year" onchange="submitFilter()" class="bg-transparent border-b-2 border-templeGold p-1 font-bold text-templeRed focus:outline-none cursor-pointer">
+            {% for y in all_years %}
+                <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+            {% empty %}
+                <option>乙巳年</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<div id="custom-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="hideModal()"></div>
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden border-2 border-templeGold">
+        <div class="bg-templeRed p-4 text-white font-serif font-bold text-lg flex justify-between items-center">
+            <span>資料管理</span>
+            <button onclick="hideModal()" class="text-2xl leading-none">&times;</button>
+        </div>
+        <form id="modal-form" class="p-6">
+            {% csrf_token %}
+            <input type="hidden" name="mode" id="modal-mode">
+            <input type="hidden" name="pk" id="modal-pk">
+            <div id="modal-body" class="space-y-4"></div>
+            <div class="mt-8 flex justify-end space-x-3">
+                <button type="button" onclick="hideModal()" class="px-4 py-2 text-gray-400 font-bold">取消</button>
+                <button type="submit" class="px-8 py-2 bg-templeRed text-white rounded-full font-bold shadow-lg hover:bg-red-800 transition">確認儲存</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<section id="home" class="page-section">
+    <div class="bg-white rounded-lg shadow-2xl text-center border-t-8 border-templeRed relative overflow-hidden min-h-[70vh] flex flex-col">
+        
+        <div class="flex-grow flex flex-col justify-center items-center p-12 relative z-10">
+            <div class="absolute top-10 right-10 opacity-5">
+                <i class="fas fa-dragon text-9xl text-templeRed"></i>
+            </div>
+            
+            <div class="inline-block p-8 border-4 border-templeGold rounded-lg mb-8 bg-templeRed/5">
+                <h2 class="text-5xl md:text-6xl font-bold text-templeRed mb-2 font-serif tracking-[0.2em]">
+                    歡迎蒞臨
+                </h2>
+            </div>
+            
+            <p class="text-3xl md:text-4xl text-templeDark font-serif italic tracking-widest">
+                福澤廣被 · 明德惟馨
+            </p>
+        </div>
+
+        <div class="w-full h-80 md:h-96 relative overflow-hidden border-t-4 border-templeGold">
+            <img src="/static/images/temple_main.jpg" 
+                 class="w-full h-full object-cover object-center transform hover:scale-105 transition duration-700" 
+                 alt="大雅福明宮">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+        </div>
+    </div>
+</section>
+
+<section id="committee" class="page-section hidden">
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-10 gap-4">
+        <h2 class="text-4xl font-bold text-templeRed font-serif border-b-4 border-templeGold pb-2">管理委員會</h2>
+        {% if user.is_authenticated %}
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'upload_excel' 'committee' %}" class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-blue-700 transition">批次上傳</a>
+            <a href="{% url 'export_excel' 'committee' %}?year={{ selected_year }}" class="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-gray-700 transition">匯出 Excel</a>
+            <button onclick="openEdit('committee')" class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-green-700 transition">單筆新增</button>
+        </div>
+        {% endif %}
+    </div>
+    <div class="flex justify-center mb-12">
+        {% for c in committees %}{% if "主任委員" in c.title or "主委" == c.title %}
+            <div class="bg-white p-8 shadow-2xl rounded-xl border-t-8 border-templeGold text-center w-64 transform hover:scale-105 transition relative group">
+                {% if user.is_authenticated %}
+                <div class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="openEdit('committee', '{{ c.id }}')" class="text-templeGold p-1"><i class="fas fa-edit"></i></button>
+                    <button onclick="executeDelete('committee', '{{ c.id }}')" class="text-red-400 p-1"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                {% endif %}
+                <div class="text-templeRed font-bold text-lg mb-2 tracking-widest">{{ c.title }}</div>
+                <div class="text-3xl text-templeDark font-serif font-bold">{{ c.name }}</div>
+            </div>
+        {% endif %}{% endfor %}
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        {% for c in committees %}{% if "主任委員" not in c.title and "主委" != c.title %}
+            <div class="bg-white p-6 shadow-md rounded-xl border-t-4 border-templeRed text-center relative group hover:shadow-lg transition">
+                {% if user.is_authenticated %}
+                <div class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="openEdit('committee', '{{ c.id }}')" class="text-gray-300 hover:text-templeGold p-1"><i class="fas fa-edit"></i></button>
+                    <button onclick="executeDelete('committee', '{{ c.id }}')" class="text-gray-300 hover:text-red-500 p-1"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                {% endif %}
+                <div class="text-templeGold font-bold text-sm mb-2 tracking-widest">{{ c.title }}</div>
+                <div class="text-2xl text-templeDark font-serif font-bold">{{ c.name }}</div>
+            </div>
+        {% endif %}{% endfor %}
+    </div>
+</section>
+
+<section id="andou" class="page-section hidden">
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
+        <h2 class="text-3xl font-bold text-templeRed font-serif">安斗名單</h2>
+        {% if user.is_authenticated %}
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'upload_excel' 'andou' %}" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold shadow-md">批次上傳</a>
+            <a href="{% url 'andou_pdf' selected_year %}" 
+            download="{{ selected_year }}年安斗名單.pdf"
+            class="bg-red-700 text-white px-4 py-1 rounded text-sm font-bold shadow-md">
+                匯出 PDF
+            </a>
+            <a href="{% url 'export_excel' 'andou' %}?year={{ selected_year }}" class="bg-gray-600 text-white px-4 py-1 rounded text-sm font-bold shadow-md">匯出 Excel</a>
+            <button onclick="openEdit('andou')" class="bg-green-600 text-white px-4 py-1 rounded text-sm shadow font-bold">單筆新增</button>
+        </div>
+        {% endif %}
+    </div>
+    <div class="space-y-4">
+        {% for a in andous %}
+        <div class="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden flex flex-col md:flex-row items-stretch relative group">
+            <div class="bg-templeRed text-white p-6 w-full md:w-48 flex-shrink-0 flex flex-col justify-center items-center text-center">
+                <span class="text-xs text-templeGold font-bold mb-2">安奉項目</span>
+                <span class="text-xl font-bold font-serif">{{ a.item }}</span>
+            </div>
+            <div class="p-6 flex-grow bg-white flex flex-col justify-center relative">
+                <p class="text-xl md:text-2xl text-templeDark font-serif font-bold leading-relaxed break-all">{{ a.name }}</p>
+                {% if user.is_authenticated %}
+                <div class="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
+                    <div class="text-sm text-gray-500"><i class="fas fa-map-marker-alt mr-2 text-templeGold"></i>{{ a.address }}</div>
+                    <div class="flex space-x-4 items-center">
+                        <div class="flex items-center">
+                            {% if a.payment_status %}
+                                <i class="fas fa-check-circle text-green-600 text-lg" title="已繳費"></i>
+                            {% else %}
+                                <i class="fas fa-exclamation-circle text-gray-300 text-lg" title="未繳費"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                    <button onclick="openEdit('andou', '{{ a.id }}')" class="text-templeGold p-1"><i class="fas fa-edit"></i></button>
+                    <button onclick="executeDelete('andou', '{{ a.id }}')" class="text-red-400 p-1"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="lights" class="page-section hidden">
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4">
+        <h2 class="text-3xl font-bold text-templeRed font-serif border-b-4 border-templeGold pb-2">點燈名單</h2>
+        {% if user.is_authenticated %}
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'upload_excel' 'light' %}" class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-md hover:bg-blue-700 transition">批次上傳</a>
+            <a href="{% url 'export_excel' 'light' %}?year={{ selected_year }}" class="bg-gray-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-md hover:bg-gray-700 transition">匯出 Excel</a>
+            <button onclick="openEdit('light')" class="bg-green-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-md hover:bg-green-700 transition">單筆新增</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {% for l in lights %}
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative group flex flex-col h-48">
+            <div class="h-3 w-full {% if '財利' in l.item %} bg-yellow-500 {% elif '太歲' in l.item %} bg-orange-600 {% else %} bg-templeRed {% endif %}"></div>
+            
+            <div class="p-6 flex flex-col items-center justify-center text-center flex-grow">
+                <span class="text-xl font-bold px-6 py-2 rounded-full mb-4 font-serif text-white shadow-sm {% if '財利' in l.item %} bg-yellow-600 {% elif '太歲' in l.item %} bg-orange-600 {% else %} bg-templeRed {% endif %}">
+                    {{ l.item }}
+                </span>
+                
+                <div class="relative inline-block">
+                    <h3 class="text-3xl font-serif font-bold text-templeDark tracking-widest px-8">
+                        {{ l.name }}
+                    </h3>
+
+                    {% if user.is_authenticated %}
+                    <div class="absolute -right-1 -bottom-1">
+                        {% if l.payment_status %}
+                            <i class="fas fa-check-circle text-green-600 text-xl bg-white rounded-full" title="已繳費"></i>
+                        {% else %}
+                            <i class="fas fa-circle-notch text-gray-200 text-xl" title="未繳費"></i>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if user.is_authenticated %}
+                <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-2">
+                    <button onclick="openEdit('light', '{{ l.id }}')" class="text-gray-300 hover:text-templeGold transition"><i class="fas fa-edit text-sm"></i></button>
+                    <button onclick="executeDelete('light', '{{ l.id }}')" class="text-gray-300 hover:text-red-600 transition"><i class="fas fa-trash-alt text-sm"></i></button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section id="donation" class="page-section hidden">
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4">
+        <h2 class="text-3xl font-bold text-templeRed font-serif border-b-4 border-templeGold pb-2">捐獻名單</h2>
+        {% if user.is_authenticated %}
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'upload_excel' 'donation' %}" class="bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-blue-700 transition">批次上傳</a>
+            <a href="{% url 'export_excel' 'donation' %}?year={{ selected_year }}" class="bg-gray-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-gray-700 transition">匯出 Excel</a>
+            <button onclick="openEdit('donation')" class="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-md hover:bg-green-700 transition">單筆新增</button>
+        </div>
+        {% endif %}
+    </div>
+    <div class="bg-white rounded-xl shadow-md overflow-hidden border border-templeGold/20">
+        <table class="w-full text-left border-collapse">
+            <thead class="bg-templeRed text-white font-serif">
+                <tr>
+                    <th class="p-4">姓名</th>
+                    <th class="p-4">金額</th>
+                    {% if user.is_authenticated %}<th class="p-4 text-center">管理</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in donations %}
+                <tr class="border-b border-gray-100 hover:bg-templeGold/5 transition">
+                    <td class="p-4 font-bold text-templeDark">{{ d.name }}</td>
+                    <td class="p-4 text-templeRed font-bold">NT$ {{ d.amount }}</td>
+                    {% if user.is_authenticated %}
+                    <td class="p-4 text-center">
+                        <button onclick="openEdit('donation', '{{ d.id }}')" class="text-templeGold mx-2"><i class="fas fa-edit"></i></button>
+                        <button onclick="executeDelete('donation', '{{ d.id }}')" class="text-red-400 mx-2"><i class="fas fa-trash-alt"></i></button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr><td colspan="{% if user.is_authenticated %}3{% else %}2{% endif %}" class="p-10 text-center text-gray-400">本年度尚無捐獻資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+// --- [ 1. 刪除邏輯 ] ---
+function executeDelete(mode, pk) {
+    if (!confirm('確定要刪除這筆資料嗎？此動作無法復原。')) return;
+    const currentSection = document.querySelector('.page-section:not(.hidden)')?.id || 'home';
+    const formData = new FormData();
+    formData.append('mode', mode);
+    formData.append('pk', pk);
+
+    fetch('/delete_data/', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'success') {
+            window.location.href = window.location.pathname + '?year={{ selected_year }}&section=' + currentSection;
+        } else {
+            alert('刪除失敗：' + data.msg);
+        }
+    })
+    .catch(err => alert('連線發生錯誤'));
+}
+
+// --- [ 2. 篩選與 Section 切換 ] ---
+function submitFilter() {
+    // 取得當前畫面上不是隱藏的 Section ID
+    const visibleSection = document.querySelector('.page-section:not(.hidden)');
+    const currentSectionId = visibleSection ? visibleSection.id : 'home';
+    
+    // 強制更新隱藏欄位的值再送出表單
+    const filterSectionInput = document.getElementById('filter-section');
+    filterSectionInput.value = currentSectionId;
+    
+    document.getElementById('filter-form').submit();
+}
+
+function showSection(id) {
+    document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
+    const target = document.getElementById(id);
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        document.getElementById('home').classList.remove('hidden');
+        id = 'home';
+    }
+
+    const filterBar = document.getElementById('filter-bar');
+    const filterSectionInput = document.getElementById('filter-section');
+    
+    if (id === 'home') {
+        filterBar?.classList.add('hidden');
+    } else {
+        filterBar?.classList.remove('hidden');
+        if (filterSectionInput) filterSectionInput.value = id;
+    }
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const navBtn = document.getElementById('nav-' + id);
+    if(navBtn) navBtn.classList.add('active');
+}
+
+// --- [ 3. 彈窗編輯與儲存 ] ---
+function openEdit(mode, pk = '') {
+    const modal = document.getElementById('custom-modal');
+    document.getElementById('modal-mode').value = mode;
+    document.getElementById('modal-pk').value = pk;
+    document.getElementById('modal-body').innerHTML = '<div class="text-center py-10">載入中...</div>';
+    modal.classList.remove('hidden');
+
+    const sendPk = (pk && pk !== 'None') ? pk : '';
+    fetch(`/get_form/?mode=${mode}&pk=${sendPk}`)
+        .then(res => res.json())
+        .then(data => { document.getElementById('modal-body').innerHTML = data.html; });
+}
+
+function hideModal() { document.getElementById('custom-modal').classList.add('hidden'); }
+
+document.getElementById('modal-form').onsubmit = function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const currentSection = document.querySelector('.page-section:not(.hidden)')?.id || 'home';
+
+    fetch('/save_data/', {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    }).then(res => res.json()).then(data => {
+        if(data.status === 'success') {
+            window.location.href = window.location.pathname + '?year={{ selected_year }}&section=' + currentSection;
+        } else {
+            alert('儲存失敗：' + data.msg);
+        }
+    });
+};
+
+// --- [ 4. 初始化 ] ---
+window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    // 如果 URL 有指定 section，就顯示該區塊，否則預設首頁
+    showSection(section || 'home');
+}
+</script>
+{% endblock %}
